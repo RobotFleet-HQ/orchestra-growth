@@ -15,9 +15,14 @@ Your reply should:
   - For general or business context, use: https://robotfleet-hq.github.io/security-orchestra-landing/
 - Never use buzzwords or hype
 
+Adjust tone based on the source field provided:
+- source=stackoverflow: Lead with the direct technical answer. Mention Security Orchestra only at the end, briefly and naturally. No promotional language.
+- source=linkedin or source=google_news: Professional tone. Write as a LinkedIn comment or article reply — 2-4 sentences, insightful, no hard sell.
+- source=reddit or source=hn: Casual, community-member tone. Conversational, helpful.
+
 Return only the reply text, no preamble.`;
 
-async function draftOneLead(id: number, title: string, body: string, scoreReason: string): Promise<void> {
+async function draftOneLead(id: number, title: string, body: string, scoreReason: string, source = ''): Promise<void> {
   try {
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -26,7 +31,7 @@ async function draftOneLead(id: number, title: string, body: string, scoreReason
       messages: [
         {
           role: 'user',
-          content: `Original post:\nTitle: ${title}\n\nBody: ${body}\n\nWhy this is relevant: ${scoreReason}`,
+          content: `source: ${source || 'unknown'}\n\nOriginal post:\nTitle: ${title}\n\nBody: ${body}\n\nWhy this is relevant: ${scoreReason}`,
         },
       ],
     });
@@ -47,7 +52,7 @@ export async function runDrafter(): Promise<void> {
   }
   console.log(`[drafter] Drafting ${leads.length} messages...`);
   for (const lead of leads) {
-    await draftOneLead(lead.id, lead.title, lead.body, lead.score_reason || '');
+    await draftOneLead(lead.id, lead.title, lead.body, lead.score_reason || '', lead.source);
   }
   console.log('[drafter] Drafting complete.');
 }

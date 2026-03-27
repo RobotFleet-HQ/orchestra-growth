@@ -44,6 +44,13 @@
     .status-approved { background: #14532d; color: #86efac; }
     .status-dismissed { background: #450a0a; color: #fca5a5; }
     .status-sent { background: #2e1065; color: #c4b5fd; }
+    .source-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px; margin-left: 6px; text-transform: uppercase; letter-spacing: 0.05em; vertical-align: middle; }
+    .source-reddit { background: #7c2d12; color: #fdba74; }
+    .source-hn { background: #78350f; color: #fde68a; }
+    .source-google_news { background: #1e3a5f; color: #93c5fd; }
+    .source-stackoverflow { background: #7c2503; color: #fdba74; border: 1px solid #ea580c; }
+    .source-linkedin { background: #1e3a8a; color: #93c5fd; }
+    .source-google_alerts { background: #14532d; color: #86efac; }
     .lead-reason { font-size: 13px; color: #94a3b8; margin-top: 10px; line-height: 1.5; }
     .lead-draft { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 13px; color: #cbd5e1; line-height: 1.6; white-space: pre-wrap; }
     .lead-draft-header { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
@@ -144,7 +151,7 @@
                 </div>
                 <div class="lead-meta">
                   <a href="${escHtml(lead.url)}" target="_blank" rel="noopener">${escHtml(lead.url.slice(0, 80))}${lead.url.length > 80 ? '…' : ''}</a>
-                  &nbsp;&middot;&nbsp; ${escHtml(lead.source)} &nbsp;&middot;&nbsp; ${escHtml(lead.author)}
+                  <span class="source-badge source-${lead.source}">${escHtml(lead.source)}</span> &nbsp;&middot;&nbsp; ${escHtml(lead.author)}
                   &nbsp;&middot;&nbsp; ${new Date(lead.created_at).toLocaleString()}
                 </div>
               </div>

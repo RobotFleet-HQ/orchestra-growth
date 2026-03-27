@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import cron from 'node-cron';
-import { runMonitor } from './monitor';
+import { runMonitor, runExtendedMonitor } from './monitor';
 import { runScorer } from './scorer';
 import { runDrafter } from './drafter';
 import { getAllLeads, updateStatus, getLeadsByStatus } from './db';
@@ -62,11 +62,18 @@ async function runPipeline(): Promise<void> {
   console.log('[pipeline] Done.');
 }
 
-// --- Scheduler: every 30 minutes ---
+// --- Scheduler: Reddit + HN every 30 minutes ---
 
 cron.schedule('*/30 * * * *', () => {
-  console.log('[cron] Triggering pipeline...');
+  console.log('[cron] Triggering Reddit/HN pipeline...');
   runPipeline().catch(console.error);
+});
+
+// --- Scheduler: Google News + SO + LinkedIn every 60 minutes ---
+
+cron.schedule('0 * * * *', () => {
+  console.log('[cron] Triggering extended monitor (Google News + SO + LinkedIn)...');
+  runExtendedMonitor().then(() => runScorer()).then(() => runDrafter()).catch(console.error);
 });
 
 // --- Start ---
