@@ -10,7 +10,9 @@ Your reply should:
 - Mention 1-2 relevant Security Orchestra agents by name only if they genuinely solve the problem
 - Sound like a helpful community member, not a salesperson
 - Be concise (3-6 sentences max)
-- Include a soft call-to-action (e.g. "happy to share more" or link to securityorchestra.com)
+- Include a soft call-to-action with the right link:
+  - If the person seems technical and wants to try agents directly, use: https://smithery.ai/servers/@RobotFleet-HQ/security-orchestra
+  - For general or business context, use: https://robotfleet-hq.github.io/security-orchestra-landing/
 - Never use buzzwords or hype
 
 Return only the reply text, no preamble.`;
