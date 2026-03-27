@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orchestra Growth — Lead Queue</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 18px; font-weight: 600; color: #f8fafc; }
+    header .subtitle { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+    .actions { display: flex; gap: 10px; align-items: center; }
+    button { cursor: pointer; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; padding: 6px 14px; transition: opacity 0.15s; }
+    button:hover { opacity: 0.85; }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-approve { background: #22c55e; color: #fff; }
+    .btn-dismiss { background: #ef4444; color: #fff; }
+    .btn-sent { background: #8b5cf6; color: #fff; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .filters { background: #1e293b; border-bottom: 1px solid #334155; padding: 12px 24px; display: flex; gap: 12px; align-items: center; }
+    .filters label { font-size: 13px; color: #94a3b8; }
+    .filters select { background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; padding: 4px 8px; font-size: 13px; }
+    .stats { padding: 16px 24px; display: flex; gap: 16px; }
+    .stat { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px 16px; min-width: 100px; }
+    .stat .num { font-size: 24px; font-weight: 700; color: #f8fafc; }
+    .stat .label { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .leads { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 12px; }
+    .lead-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; }
+    .lead-card.score-high { border-left: 3px solid #22c55e; }
+    .lead-card.score-mid { border-left: 3px solid #f59e0b; }
+    .lead-card.score-low { border-left: 3px solid #64748b; }
+    .lead-header { display: flex; align-items: flex-start; gap: 12px; }
+    .score-badge { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 4px 8px; font-size: 13px; font-weight: 700; min-width: 36px; text-align: center; flex-shrink: 0; }
+    .score-badge.high { color: #22c55e; }
+    .score-badge.mid { color: #f59e0b; }
+    .score-badge.low { color: #64748b; }
+    .lead-title { font-size: 15px; font-weight: 600; color: #f8fafc; }
+    .lead-meta { font-size: 12px; color: #64748b; margin-top: 4px; }
+    .lead-meta a { color: #3b82f6; text-decoration: none; }
+    .lead-meta a:hover { text-decoration: underline; }
+    .status-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; margin-left: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .status-new { background: #1e40af; color: #93c5fd; }
+    .status-approved { background: #14532d; color: #86efac; }
+    .status-dismissed { background: #450a0a; color: #fca5a5; }
+    .status-sent { background: #2e1065; color: #c4b5fd; }
+    .lead-reason { font-size: 13px; color: #94a3b8; margin-top: 10px; line-height: 1.5; }
+    .lead-draft { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 13px; color: #cbd5e1; line-height: 1.6; white-space: pre-wrap; }
+    .lead-draft-header { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .lead-actions { margin-top: 12px; display: flex; gap: 8px; }
+    .empty { padding: 48px 24px; text-align: center; color: #475569; font-size: 14px; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #334155; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #run-status { font-size: 13px; color: #64748b; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Orchestra Growth &mdash; Lead Queue</h1>
+      <div class="subtitle">Public signal monitoring for Security Orchestra</div>
+    </div>
+    <div class="actions">
+      <span id="run-status"></span>
+      <button class="btn-primary" id="run-btn" onclick="triggerRun()">Run Pipeline</button>
+    </div>
+  </header>
+
+  <div class="filters">
+    <label>Filter by status:</label>
+    <select id="filter-status" onchange="loadLeads()">
+      <option value="">All</option>
+      <option value="new">New</option>
+      <option value="approved">Approved</option>
+      <option value="dismissed">Dismissed</option>
+      <option value="sent">Sent</option>
+    </select>
+    <label style="margin-left:16px">Min score:</label>
+    <select id="filter-score" onchange="loadLeads()">
+      <option value="">Any</option>
+      <option value="5">5+</option>
+      <option value="7">7+</option>
+      <option value="9">9+</option>
+    </select>
+  </div>
+
+  <div class="stats" id="stats"></div>
+  <div class="leads" id="leads-container">
+    <div class="empty">Loading leads...</div>
+  </div>
+
+  <script>
+    let allLeads = [];
+
+    async function loadLeads() {
+      const status = document.getElementById('filter-status').value;
+      const minScore = document.getElementById('filter-score').value;
+      let url = '/api/leads?';
+      if (status) url += `status=${status}&`;
+      if (minScore) url += `minScore=${minScore}`;
+
+      const res = await fetch(url);
+      allLeads = await res.json();
+      renderStats();
+      renderLeads(allLeads);
+    }
+
+    function renderStats() {
+      const all = allLeads;
+      const byStatus = s => all.filter(l => l.status === s).length;
+      const highIntent = all.filter(l => l.score >= 7).length;
+      document.getElementById('stats').innerHTML = `
+        <div class="stat"><div class="num">${all.length}</div><div class="label">Total shown</div></div>
+        <div class="stat"><div class="num">${highIntent}</div><div class="label">Score 7+</div></div>
+        <div class="stat"><div class="num">${byStatus('new')}</div><div class="label">New</div></div>
+        <div class="stat"><div class="num">${byStatus('approved')}</div><div class="label">Approved</div></div>
+        <div class="stat"><div class="num">${byStatus('sent')}</div><div class="label">Sent</div></div>
+      `;
+    }
+
+    function scoreClass(score) {
+      if (score >= 7) return 'high';
+      if (score >= 4) return 'mid';
+      return 'low';
+    }
+
+    function renderLeads(leads) {
+      const container = document.getElementById('leads-container');
+      if (!leads.length) {
+        container.innerHTML = '<div class="empty">No leads match the current filter.</div>';
+        return;
+      }
+      container.innerHTML = leads.map(lead => {
+        const sc = scoreClass(lead.score);
+        const scoreLabel = lead.score != null ? lead.score : '?';
+        return `
+          <div class="lead-card score-${sc}" id="card-${lead.id}">
+            <div class="lead-header">
+              <div class="score-badge ${sc}">${scoreLabel}</div>
+              <div style="flex:1">
+                <div class="lead-title">
+                  ${escHtml(lead.title)}
+                  <span class="status-badge status-${lead.status}">${lead.status}</span>
+                </div>
+                <div class="lead-meta">
+                  <a href="${escHtml(lead.url)}" target="_blank" rel="noopener">${escHtml(lead.url.slice(0, 80))}${lead.url.length > 80 ? '…' : ''}</a>
+                  &nbsp;&middot;&nbsp; ${escHtml(lead.source)} &nbsp;&middot;&nbsp; ${escHtml(lead.author)}
+                  &nbsp;&middot;&nbsp; ${new Date(lead.created_at).toLocaleString()}
+                </div>
+              </div>
+            </div>
+            ${lead.score_reason ? `<div class="lead-reason">${escHtml(lead.score_reason)}</div>` : ''}
+            ${lead.drafted_message ? `
+              <div class="lead-draft">
+                <div class="lead-draft-header">Drafted reply</div>
+                ${escHtml(lead.drafted_message)}
+              </div>` : ''}
+            <div class="lead-actions">
+              ${lead.status !== 'approved' ? `<button class="btn-approve btn-sm" onclick="setStatus(${lead.id},'approved')">Approve</button>` : ''}
+              ${lead.status !== 'sent' ? `<button class="btn-sent btn-sm" onclick="setStatus(${lead.id},'sent')">Mark Sent</button>` : ''}
+              ${lead.status !== 'dismissed' ? `<button class="btn-dismiss btn-sm" onclick="setStatus(${lead.id},'dismissed')">Dismiss</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function setStatus(id, status) {
+      await fetch(`/api/leads/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      loadLeads();
+    }
+
+    async function triggerRun() {
+      const btn = document.getElementById('run-btn');
+      const statusEl = document.getElementById('run-status');
+      btn.disabled = true;
+      statusEl.innerHTML = '<span class="spinner"></span>Running pipeline...';
+      try {
+        await fetch('/api/run', { method: 'POST' });
+        statusEl.textContent = 'Pipeline started — refreshing in 60s...';
+        setTimeout(() => { loadLeads(); statusEl.textContent = ''; }, 60000);
+      } catch (e) {
+        statusEl.textContent = 'Error triggering pipeline';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Auto-refresh every 2 minutes
+    setInterval(loadLeads, 120000);
+    loadLeads();
+  </script>
+</body>
+</html>
